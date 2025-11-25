@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Chair Wiki — Alex Smith</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Chair Wiki — Alex Smith</h1>
+    <div style="margin-top:6px;font-size:13px;color:#9aa7bf">
+      Fan-run archive: episodes, transcripts, timestamps, and theories.
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="season-tabs">
+    <span class="season-tab active" data-season="1">Season 1</span>
+    <span class="season-tab" data-season="2">Season 2</span>
+  </div>
+
+  <input id="search" class="search" placeholder="Search episodes or notes..." />
+
+  <section id="index">
+    <div id="list" class="ep-list"></div>
+  </section>
+
+  <section id="page" class="ep-page">
+    <a href="#" id="back" class="back">← back to index</a>
+    <div id="content"></div>
+  </section>
+</main>
+
+<script>
+let episodes = [];
+let currentSeason = 1;
+
+async function loadEpisodes(){
+  const r = await fetch('episodes.json');
+  episodes = await r.json();
+  displayList();
+}
+
+function displayList() {
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  const filtered = episodes.filter(e=>e.season===currentSeason);
+  filtered.forEach(e=>{
+    const d = document.createElement('div'); d.className='card';
+    d.innerHTML = `<h3>${e.title}</h3>
+      <div class="meta">Part ${e.part} • ${e.duration} • <a href="${e.url}" target="_blank">YouTube</a></div>
+      <button data-id="${e.id}" style="margin-top:8px">Open page</button>`;
+    d.querySelector('button').onclick = ()=> openPage(e);
+    list.appendChild(d);
+  });
+}
+
+function openPage(e){
+  document.getElementById('index').style.display='none';
+  document.getElementById('page').style.display='block';
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <h2>${e.title}</h2>
+    <div class="meta">Part ${e.part} • <a href="${e.url}" target="_blank">YouTube source</a></div>
+    <div style="margin:12px 0">
+      <iframe src="https://www.youtube.com/embed/${e.ytid}" allowfullscreen></iframe>
+    </div>
+    <h3>Transcript / Notes</h3>
+    <pre style="white-space:pre-wrap;background:#071019;padding:12px;border-radius:8px">${e.transcript||'No transcript yet'}</pre>
+    <h3>Community theories</h3>
+    <div id="theories">No theories yet. Add one!</div>
+  `;
+}
+
+document.getElementById('back').onclick = (ev)=>{
+  ev.preventDefault();
+  document.getElementById('page').style.display='none';
+  document.getElementById('index').style.display='block';
+}
+
+document.querySelectorAll('.season-tab').forEach(tab=>{
+  tab.onclick = ()=> {
+    document.querySelectorAll('.season-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentSeason = parseInt(tab.dataset.season);
+    displayList();
+  }
+});
+
+document.getElementById('search').addEventListener('input', (ev)=>{
+  const q = ev.target.value.toLowerCase();
+  document.querySelectorAll('.ep-list .card').forEach(card=>{
+    const txt = card.innerText.toLowerCase();
+    card.style.display = txt.includes(q)?'':'none';
+  });
+});
+
+loadEpisodes();
+</script>
+</body>
+</html>
